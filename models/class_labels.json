@@ -1,0 +1,57 @@
+{
+    "classes": [
+        "fire",
+        "normal",
+        "oil_leak",
+        "steam_leak",
+        "water_leak"
+    ],
+    "class_to_idx": {
+        "fire": 0,
+        "normal": 1,
+        "oil_leak": 2,
+        "steam_leak": 3,
+        "water_leak": 4
+    },
+    "idx_to_class": {
+        "0": "fire",
+        "1": "normal",
+        "2": "oil_leak",
+        "3": "steam_leak",
+        "4": "water_leak"
+    },
+    "display_names": {
+        "fire": "\ud83d\udd25 FIRE",
+        "normal": "\u2713 Normal",
+        "oil_leak": "\ud83d\udee2\ufe0f Oil Leak",
+        "steam_leak": "\ud83d\udca8 Steam Leak",
+        "water_leak": "\ud83d\udca7 Water Leak"
+    },
+    "colors_bgr": {
+        "fire": [
+            0,
+            0,
+            255
+        ],
+        "normal": [
+            0,
+            255,
+            0
+        ],
+        "oil_leak": [
+            0,
+            140,
+            255
+        ],
+        "steam_leak": [
+            180,
+            180,
+            180
+        ],
+        "water_leak": [
+            255,
+            191,
+            0
+        ]
+    }
+}
