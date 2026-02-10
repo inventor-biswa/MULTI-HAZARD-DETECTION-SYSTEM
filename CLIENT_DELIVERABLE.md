@@ -35,6 +35,16 @@ We have developed a **real-time video analytics system** for industrial hazard d
 | 💨 **Steam Leakage** | High | Gray border |
 | ✓ **Normal (No Hazard)** | High | Green border |
 
+#### 🔊 Sound Detection (via USB Camera Microphone)
+
+| Sound Type | Detection Method | Alert |
+|------------|-----------------|-------|
+| 🔊 **Loud Bang / Impact** | Energy spike (8x baseline) | Critical alert |
+| ⚙️ **Grinding / Mechanical** | Mid-frequency energy (500-8kHz) | Warning alert |
+| 💨 **Hissing / Gas Leak** | High-frequency energy (2-16kHz) | Warning alert |
+| 🚨 **Alarm / Siren** | Tonal detection (800-4kHz) | Critical alert |
+| ⚠️ **Abnormal Sound** | General energy spike (2x baseline) | Warning alert |
+
 ### 3. Software Components
 
 | Script | Purpose | Status |
@@ -43,6 +53,8 @@ We have developed a **real-time video analytics system** for industrial hazard d
 | `train_model.py` | Trains the classification model | ✅ Complete |
 | `export_model.py` | Exports PyTorch model to ONNX format | ✅ Complete |
 | `detect_hazard.py` | Real-time hazard detection with visual output | ✅ Complete |
+| `detect_sound.py` | Abnormal sound detection via USB mic | ✅ Complete |
+| `detect_combined.py` | Combined video + audio detection | ✅ Complete |
 
 ### 4. Raspberry Pi 5 Deployment Package
 
@@ -92,7 +104,9 @@ MULTI_HAZARD_DETECTION/
 │   ├── extract_frames.py            # Data preparation
 │   ├── train_model.py               # Model training
 │   ├── export_model.py              # ONNX export
-│   └── detect_hazard.py             # Real-time inference
+│   ├── detect_hazard.py             # Visual hazard inference
+│   ├── detect_sound.py              # Audio anomaly detection
+│   └── detect_combined.py           # Combined video + audio
 ├── raspberry_pi/
 │   ├── setup_pi.sh                  # Automated Pi setup
 │   └── RASPBERRY_PI_SETUP.md        # Deployment guide
@@ -114,6 +128,9 @@ MULTI_HAZARD_DETECTION/
 | **Deployment Format** | ONNX Runtime |
 | **Target Hardware** | Raspberry Pi 5 (4GB+) |
 | **Camera Support** | USB Camera (any V4L2 compatible) |
+| **Audio Input** | USB Camera built-in microphone |
+| **Audio Detection** | Energy + spectral analysis (baseline-relative) |
+| **Audio Dependencies** | PyAudio, SciPy |
 
 ---
 
@@ -134,7 +151,8 @@ Complete step-by-step instructions are provided in `raspberry_pi/RASPBERRY_PI_SE
 
 | Enhancement | Description |
 |-------------|-------------|
-| Audio Detection | Add abnormal sound detection module |
+| ~~Audio Detection~~ | ~~Add abnormal sound detection module~~ ✅ **DONE** |
+| ML Audio Model | Train custom ML model for specific industrial sounds |
 | Alert Logging | Save detection events to database |
 | MQTT Integration | Real-time IoT alerts |
 | Web Dashboard | Remote monitoring interface |

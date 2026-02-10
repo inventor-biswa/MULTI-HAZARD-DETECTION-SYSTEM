@@ -5,9 +5,9 @@
 
 ## 🎯 Project Overview
 
-Build a **single multi-class video analytics system** to detect industrial hazards using a controlled demo environment deployed on Raspberry Pi with USB camera.
+Build a **multi-class video + audio analytics system** to detect industrial hazards using a controlled demo environment deployed on Raspberry Pi with USB camera and microphone.
 
-### Detection Classes (5 classes)
+### Video Detection Classes (5 classes)
 | Class | Visual Trigger | Color/Appearance |
 |-------|---------------|------------------|
 | `normal` | Empty rig, no activity | Static background |
@@ -16,7 +16,14 @@ Build a **single multi-class video analytics system** to detect industrial hazar
 | `steam_leak` | Fogger/smoke machine | White/gray diffuse cloud |
 | `fire` | Lighter/candle | Orange/yellow flame |
 
-> **Note:** Audio detection (abnormal sound) will be added as a separate module later.
+### Audio Detection Categories
+| Category | Trigger | Alert Level |
+|----------|---------|-------------|
+| `loud_bang` | Impact / explosion sounds | **Critical** |
+| `alarm` | Siren / alarm sounds | **Critical** |
+| `grinding` | Mechanical grinding | Warning |
+| `hissing` | Gas leak / steam sounds | Warning |
+| `abnormal` | Any sound above threshold | Warning |
 
 ---
 
@@ -24,8 +31,8 @@ Build a **single multi-class video analytics system** to detect industrial hazar
 
 | Component | Purpose | Qty |
 |-----------|---------|-----|
-| Raspberry Pi 4 (8GB+) | Edge inference | 1 |
-| USB Camera | Video capture | 1 |
+| Raspberry Pi 4/5 | Edge inference | 1 |
+| USB Camera (e.g., Logitech C270) | Video capture + Microphone | 1 |
 | PVC Pipe Frame | Water/Oil leak demo | 1 |
 | Fogger/Smoke Machine | Steam simulation | 1 |
 | Lighter/Candle | Fire simulation | 1 |
@@ -40,29 +47,30 @@ Build a **single multi-class video analytics system** to detect industrial hazar
 ```
 MULTI_HAZARD_DETECTION/
 ├── videos/                      # Raw training videos
-│   ├── normal.mp4              # 5-10 min empty rig
-│   ├── water_leak.mp4          # 5-10 min clear water dripping
-│   ├── oil_leak.mp4            # 5-10 min brown/black liquid
-│   ├── steam_leak.mp4          # 5-10 min fogger running
-│   └── fire.mp4                # 5-10 min lighter/candle flame
+│   ├── normal.mp4
+│   ├── water_leak.mp4
+│   ├── oil_leak.mp4
+│   ├── steam_leak.mp4
+│   └── fire.mp4
 ├── dataset/                     # Extracted frames
 │   ├── train/
-│   │   ├── normal/
-│   │   ├── water_leak/
-│   │   ├── oil_leak/
-│   │   ├── steam_leak/
-│   │   └── fire/
 │   ├── val/
 │   └── test/
 ├── models/                      # Trained models
 │   ├── hazard_detector.pth     # PyTorch model
 │   ├── hazard_detector.onnx    # ONNX for Raspberry Pi
+│   ├── hazard_detector.onnx.data # Model weights
 │   └── class_labels.json       # Class mapping
 ├── scripts/
 │   ├── extract_frames.py       # Video → Frames
 │   ├── train_model.py          # Train multi-class model
 │   ├── export_model.py         # Export to ONNX
-│   └── detect_hazard.py        # Real-time inference
+│   ├── detect_hazard.py        # Video-only real-time inference
+│   ├── detect_sound.py         # Audio abnormal sound detection
+│   └── detect_combined.py      # Combined video + audio detection
+├── raspberry_pi/
+│   ├── setup_pi.sh             # Automated Pi setup script
+│   └── RASPBERRY_PI_SETUP.md   # Setup guide
 ├── hazard_env/                  # Virtual environment
 └── README.md
 ```
@@ -118,39 +126,36 @@ MULTI_HAZARD_DETECTION/
 
 ## 📺 Display Design
 
-Single screen showing all detections with color-coded alerts:
+Combined screen showing video + audio detections with color-coded alerts:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│                                                            │
+│ FPS: 15.2          Multi-Hazard Detection [V+A]           │
 │   ┌──────────────────────────────────────────────────────┐ │
 │   │                                                      │ │
 │   │                  LIVE CAMERA FEED                    │ │
 │   │                                                      │ │
-│   │                                                      │ │
 │   └──────────────────────────────────────────────────────┘ │
 │                                                            │
-│   ┌────────────────────────────────────────────────────┐   │
-│   │  STATUS: ⚠️ FIRE DETECTED!          Confidence: 98% │   │
-│   └────────────────────────────────────────────────────┘   │
-│                                                            │
-│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐            │
-│   │ ✓    │ │  ○   │ │  ○   │ │  ○   │ │ ⚠️   │            │
-│   │Normal│ │Water │ │ Oil  │ │Steam │ │ Fire │            │
-│   └──────┘ └──────┘ └──────┘ └──────┘ └──────┘            │
-│                                                            │
-│                          FPS: 15.2                         │
+│   VIDEO: NORMAL              98%    AUDIO: Normal          │
+│   ┌──────────── Audio Level Meter ──────────────────────┐  │
+│   │████░░░░░░░░░░░░░░░░░░░░░░   Level: 1.2x  Freq: 0Hz │  │
+│   └─────────────────────────────────────────────────────┘  │
+│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │
+│   │Normal│ │Water │ │ Oil  │ │Steam │ │ Fire │ │Sound │  │
+│   └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘  │
 └────────────────────────────────────────────────────────────┘
 ```
 
 ### Alert Colors
 | Detection | Color | Border |
 |-----------|-------|--------|
-| Normal | Green | None |
+| Normal | Green | Green border |
 | Water Leak | Blue | Blue border |
 | Oil Leak | Brown/Orange | Orange border |
 | Steam Leak | Gray/White | Gray border |
 | Fire | Red | **Flashing red border** |
+| Sound (abnormal) | Yellow/Red | Flashing if critical |
 
 ---
 
@@ -185,43 +190,70 @@ pip install opencv-python numpy torch torchvision pillow matplotlib tqdm scikit-
 2. Create `detect_hazard.py` with multi-class display
 3. Test on Raspberry Pi with USB camera
 
+### Phase 6: Audio Detection ✅
+1. Create `detect_sound.py` — USB camera microphone based
+2. Baseline calibration (5 sec quiet environment)
+3. Frequency-band analysis for categorized alerts
+4. Auto-detection of sample rate and channels per device
+
+### Phase 7: Combined Detection ✅
+1. Create `detect_combined.py` — video + audio in single display
+2. Audio runs in background thread with retry logic
+3. Unified UI with audio level meter and sound category indicators
+
 ---
 
 ## 🍓 Raspberry Pi Deployment
 
-### Files to Copy
-```
-models/hazard_detector.onnx
-models/hazard_detector.onnx.data
-models/class_labels.json
-scripts/detect_hazard.py
+> See [RASPBERRY_PI_SETUP.md](raspberry_pi/RASPBERRY_PI_SETUP.md) for the full step-by-step guide.
+
+### Automated Setup
+```bash
+# Transfer and run setup script (from Windows PowerShell)
+scp "raspberry_pi/setup_pi.sh" test@<PI_IP>:~/Downloads/
+
+# On the Pi
+cd ~/Downloads
+sed -i 's/\r$//' setup_pi.sh    # Fix Windows line endings
+./setup_pi.sh                    # Installs everything (~5-10 min)
 ```
 
-### Installation
+### Copy Model Files
 ```bash
-pip install onnxruntime opencv-python numpy
+cp ~/Downloads/hazard_detector.onnx ~/multi_hazard_detection/models/
+cp ~/Downloads/hazard_detector.onnx.data ~/multi_hazard_detection/models/
 ```
 
 ### Run Detection
 ```bash
-python detect_hazard.py --camera 0 --skip 2 --delay 150
+cd ~/multi_hazard_detection
+
+# Find audio device index
+./run_sound.sh --list-devices
+
+# Combined video + audio (recommended)
+./run_combined.sh --camera 0 --audio-device <MIC_INDEX> --skip 3
+
+# Combined fullscreen (for demo/expo)
+./run_combined.sh --camera 0 --audio-device <MIC_INDEX> --fullscreen
+
+# Video only
+./run_detection.sh --camera 0
+
+# Audio only
+./run_sound.sh --device <MIC_INDEX>
 ```
 
 ---
 
-## 🔮 Future Additions
+## 🔮 Future Enhancements
 
-### Audio Detection Module (Phase 2)
-- Sound sensor connected to Raspberry Pi
-- Threshold-based clap/loud sound detection
-- OR ML-based audio classification
-- Separate process running alongside video detection
-
-### Potential Enhancements
 - Alert logging to file/database
 - MQTT/HTTP alerts for IoT integration
 - Web dashboard for remote monitoring
 - Multiple camera support
+- ML-based audio classification (replacing threshold-based)
+- ESP32 NeoPixel alert indicators
 
 ---
 
@@ -234,38 +266,46 @@ python detect_hazard.py --camera 0 --skip 2 --delay 150
 | 3 | Frame Extraction | 30 min |
 | 4 | Model Training | 1-2 hours |
 | 5 | Testing & Deployment | 1 hour |
-| **Total** | | **4-6 hours** |
+| 6 | Audio Detection Module | 1-2 hours |
+| 7 | Combined V+A Integration | 1 hour |
+| **Total** | | **6-9 hours** |
 
 ---
 
 ## ✅ Success Criteria
 
-- [ ] Model achieves >95% accuracy on test set
-- [ ] Real-time inference at 10+ FPS on Raspberry Pi
-- [ ] Correctly distinguishes all 5 classes
-- [ ] Clear visual differentiation between water (clear) and oil (brown)
+- [x] Model achieves >95% accuracy on test set
+- [x] Real-time inference at 10+ FPS on Raspberry Pi
+- [x] Correctly distinguishes all 5 visual classes
+- [x] Clear visual differentiation between water (clear) and oil (brown)
+- [x] Audio abnormal sound detection with categorization
+- [x] Combined video + audio display with unified UI
+- [x] Automated Raspberry Pi setup script
+- [x] USB device retry logic for reliable audio
 - [ ] Responsive demo for GMR Expo
 
 ---
 
 ## 📞 Quick Start Commands
 
+### Windows (Training & Testing)
 ```powershell
-# 1. Setup
 cd MULTI_HAZARD_DETECTION
 .\hazard_env\Scripts\Activate.ps1
 
-# 2. Extract frames (after recording videos)
-python scripts/extract_frames.py
+python scripts/extract_frames.py          # Video → Frames
+python scripts/train_model.py             # Train model
+python scripts/export_model.py            # Export to ONNX
+python scripts/detect_combined.py --camera 0 --audio-device 1  # Test locally
+```
 
-# 3. Train model
-python scripts/train_model.py
-
-# 4. Export to ONNX
-python scripts/export_model.py
-
-# 5. Run detection
-python scripts/detect_hazard.py --camera 0
+### Raspberry Pi (Deployment)
+```bash
+cd ~/multi_hazard_detection
+./run_combined.sh --camera 0 --audio-device 2 --skip 3           # Combined
+./run_combined.sh --camera 0 --audio-device 2 --fullscreen       # Fullscreen
+./run_detection.sh --camera 0                                     # Video only
+./run_sound.sh --list-devices                                     # Find mic
 ```
 
 ---
