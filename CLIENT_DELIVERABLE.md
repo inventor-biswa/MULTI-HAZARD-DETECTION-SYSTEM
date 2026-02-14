@@ -1,4 +1,4 @@
-# Multi-Hazard Video Analytics System
+# Multi-Hazard Video + Audio Analytics System
 ## Client Deliverable Document
 
 **Project:** GMR 2025 Expo - Industrial Hazard Detection Demo  
@@ -9,7 +9,7 @@
 
 ## 📋 Executive Summary
 
-We have developed a **real-time video analytics system** for industrial hazard detection, designed for deployment on edge devices (Raspberry Pi 5). The system can detect 5 different hazard classes from a live camera feed and provides immediate visual alerts.
+We have developed a **real-time video + audio analytics system** for industrial hazard detection, designed for deployment on edge devices (Raspberry Pi 5). The system detects 5 visual hazard classes from a live camera feed and 5 categories of abnormal sounds from the USB camera microphone, providing immediate visual and audio alerts in a unified display.
 
 ---
 
@@ -61,24 +61,31 @@ We have developed a **real-time video analytics system** for industrial hazard d
 | Component | Status |
 |-----------|--------|
 | Automated setup script (`setup_pi.sh`) | ✅ Complete |
-| Quick-run script (`run_detection.sh`) | ✅ Complete |
+| Combined launcher (`run_combined.sh`) | ✅ Complete |
+| Video-only launcher (`run_detection.sh`) | ✅ Complete |
+| Audio-only launcher (`run_sound.sh`) | ✅ Complete |
+| Desktop shortcut & auto-start on boot | ✅ Complete |
 | Detailed setup documentation | ✅ Complete |
 | Headless mode support (SSH) | ✅ Complete |
 | Fullscreen display mode | ✅ Complete |
+| USB audio retry logic (device contention fix) | ✅ Complete |
 
 ---
 
 ## 🎯 Key Features Implemented
 
 ### Real-Time Detection
-- **Input:** USB camera or video file
-- **Processing:** Frame-by-frame classification
-- **Output:** Live display with color-coded hazard alerts
+- **Video Input:** USB camera or video file
+- **Audio Input:** USB camera built-in microphone (auto-detected sample rate & channels)
+- **Processing:** Frame-by-frame classification + continuous audio spectral analysis
+- **Output:** Unified live display with color-coded hazard alerts + audio level meter
 - **Expected FPS:** 10-15 FPS on Raspberry Pi 5
 
 ### Visual Feedback System
 - Color-coded borders based on detection class
 - Status bar showing current detection and confidence level
+- Audio level meter with energy ratio and dominant frequency
+- Sound category indicators (bang, grinding, hissing, alarm)
 - FPS counter for performance monitoring
 - Fullscreen mode for demo presentations
 - Keyboard controls (`Q` to quit, `F` for fullscreen)
@@ -139,9 +146,12 @@ MULTI_HAZARD_DETECTION/
 ### For Raspberry Pi 5
 
 1. **Transfer setup script** to Pi via SCP
-2. **Run setup script** (`./setup_pi.sh`)
-3. **Copy model files** (`hazard_detector.onnx` and `.onnx.data`)
-4. **Start detection** (`./run_detection.sh --camera 0`)
+2. **Fix line endings** (`sed -i 's/\r$//' setup_pi.sh`)
+3. **Run setup script** (`./setup_pi.sh`) — installs all dependencies (~5-10 min)
+4. **Copy model files** (`hazard_detector.onnx` and `.onnx.data`)
+5. **Find audio device** (`./run_sound.sh --list-devices`)
+6. **Start detection** (`./run_combined.sh --camera 0 --audio-device <MIC_INDEX> --skip 3`)
+7. **Optional:** Create desktop shortcut or auto-start on boot (see setup guide)
 
 Complete step-by-step instructions are provided in `raspberry_pi/RASPBERRY_PI_SETUP.md`.
 
@@ -170,5 +180,5 @@ All source code, trained models, and documentation are included in this delivera
 
 ---
 
-**Document Version:** 1.0  
-**Delivery Date:** February 10, 2026
+**Document Version:** 1.1  
+**Delivery Date:** February 11, 2026
